@@ -1,4 +1,0 @@
-1. Remove First Line of Excel
-2. If Photo require price and price not found, raise error
-3. Column wise label settings
-4. Sort by purchase date
