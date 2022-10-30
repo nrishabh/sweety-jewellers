@@ -132,7 +132,7 @@ def load_purchase_xlsx(path):
 
     printer("Loaded Purchase Order file successfully.")
 
-    DB['time_tag'] = ""
+    DB['time_tag'] = "Regular"
 
     for i in list(DB.index):
         if DB.at[i, "To Clear"] in ["Y", "y"]:
@@ -142,7 +142,7 @@ def load_purchase_xlsx(path):
             try:
                 last_purchase_date = max(purchase_data.at[i, 'Date'])
             except KeyError as e:
-                DB.at[i, 'time_tag'] = ''
+                DB.at[i, 'time_tag'] = 'Regular'
                 continue
             except TypeError as e:
                 last_purchase_date = purchase_data.at[i, 'Date']
@@ -150,7 +150,7 @@ def load_purchase_xlsx(path):
             if last_purchase_date>=NEW_STOCK_DATE:
                 DB.at[i, 'time_tag'] = 'New This Month'
             else:
-                DB.at[i, 'time_tag'] = ''
+                DB.at[i, 'time_tag'] = 'Regular'
 
     printer("Finished assigning time tags.")
 
@@ -213,13 +213,14 @@ def create_image(DB, primary_key, labels, rate_col=None):
 
     font_size = int((w/2100)*FONT_SIZE)
     FONT_SETTINGS = ImageFont.truetype(FONT_FILE, font_size)
-    LINE_HEIGHT = int((w/2100)*LINE_HEIGHT) # pixels
+    line_height = int((w/2100)*LINE_HEIGHT) # pixels
+    printer("Line Height: "+str(line_height))
     
     
     # Blank line above
-    im = Image.new(mode="RGB",size=(w, int(LINE_HEIGHT/2)), color=(250, 250, 250))
+    im = Image.new(mode="RGB",size=(w, int(line_height/2)), color=(250, 250, 250))
     pipeline.append(im)
-    total_height += int(LINE_HEIGHT/2)
+    total_height += int(line_height/2)
     
     # Preparing text to write
     txt_lines = [[]]
@@ -239,17 +240,17 @@ def create_image(DB, primary_key, labels, rate_col=None):
     
     # Writing text to image line-by-line
     for lines in txt_lines:
-        im = Image.new(mode="RGB",size=(w, LINE_HEIGHT), color=(250, 250, 250))
+        im = Image.new(mode="RGB",size=(w, line_height), color=(250, 250, 250))
         draw = ImageDraw.Draw(im)
         msg = "        ".join(lines)
-        draw.text((w/2, LINE_HEIGHT/2), msg, fill='black', font=FONT_SETTINGS, anchor='mm')
+        draw.text((w/2, line_height/2), msg, fill='black', font=FONT_SETTINGS, anchor='mm')
         pipeline.append(im)
-        total_height += LINE_HEIGHT
+        total_height += line_height
     
     # Blank line below
-    im = Image.new(mode="RGB",size=(w, int(LINE_HEIGHT/2)), color=(250, 250, 250))
+    im = Image.new(mode="RGB",size=(w, int(line_height/2)), color=(250, 250, 250))
     pipeline.append(im)
-    total_height += int(LINE_HEIGHT/2)
+    total_height += int(line_height/2)
     
     # Final Image
     final_img = Image.new(mode='RGB', size=(w, total_height))
@@ -267,8 +268,11 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
     global PRICE_COLS, LABELS_PER_LINE
 
     PRICE_COLS = entryPriceCols.get().split(",")
-    for i in range(len(PRICE_COLS)):
-        PRICE_COLS[i] = PRICE_COLS[i].strip()
+    if PRICE_COLS!=['']:
+        for i in range(len(PRICE_COLS)):
+            PRICE_COLS[i] = PRICE_COLS[i].strip()
+    else:
+        PRICE_COLS = list()
 
     printer("Set price columns.")
 
@@ -277,10 +281,6 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
 
     OUT_FOLDER = entryOutFolder.get()
     printer("Set output folder.")
-    
-    for price_col in PRICE_COLS:
-        if not os.path.isdir(OUT_FOLDER+r"/"+price_col):
-            os.makedirs(OUT_FOLDER+r"/"+price_col)
 
     db_prep()
 
@@ -290,11 +290,20 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
             eprinter(f"{item} - Skipped.")
             continue
         
+        path_by_time_tag = r"/BY_TIME_TAG/"+DB.at[item, 'time_tag']+r"/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']
+        path_by_group = r"/BY_GROUP/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']+r"/"+DB.at[item, 'time_tag']
+
         printer(f"{item} - Creating image for wholesale.")
-        if not os.path.isdir(OUT_FOLDER+r"/"+"Wholesale"):
-            os.makedirs(OUT_FOLDER+r"/"+"Wholesale")
+        
+        if not os.path.isdir(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_time_tag):
+            os.makedirs(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_time_tag)
+
+        if not os.path.isdir(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group):
+            os.makedirs(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group)    
+        
         img = create_image(DB, item, labels=["Product Code", "Group", "Category"])
-        img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+item+".jpg")
+        img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_time_tag+r"/"+item+".jpg")
+        img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group+r"/"+item+".jpg")
         del(img)
         printer(f"{item} - Created image for wholesale.")
         
@@ -308,7 +317,15 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
             else:
                 printer(f"{item} - Creating retail image for col {price_col}.")
                 img = create_image(DB, item, labels=["Product Code", "Group", "Category", "Rate", "Min Ord"], rate_col=price_col)
-                img.save(OUT_FOLDER+r"/"+price_col+r"/"+item+".jpg")
+                
+                if not os.path.isdir(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag):
+                    os.makedirs(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag)
+
+                if not os.path.isdir(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group):
+                    os.makedirs(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group)
+
+                img.save(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group+r"/"+item+".jpg")
+                img.save(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag+r"/"+item+".jpg")
                 del(img)
                 printer(f"{item} - Created retail image for col {price_col}.")
     
