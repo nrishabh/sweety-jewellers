@@ -15,7 +15,8 @@ USEFUL_COLS = ["Product Code", "Name", "Group", "Category", "Base Unit", "To Cle
 PRICE_COLS = list()
 
 FONT_SIZE = 45
-FONT_FILE = r"assets/font.ttf"
+GENERAL_FONT_FILE = r"assets/general_font.ttf"
+MARKETING_FONT_FILE = r"assets/marketing_font.ttf"
 LINE_HEIGHT = 100
 LABELS_PER_LINE = 2
 
@@ -212,10 +213,18 @@ def create_image(DB, primary_key, labels, rate_col=None):
     total_height += h
 
     font_size = int((w/2100)*FONT_SIZE)
-    FONT_SETTINGS = ImageFont.truetype(FONT_FILE, font_size)
     line_height = int((w/2100)*LINE_HEIGHT) # pixels
     printer("Line Height: "+str(line_height))
     
+    # Marketing line first
+    marketing_font = ImageFont.truetype(MARKETING_FONT_FILE, font_size)
+    im = Image.new(mode="RGB",size=(w, line_height), color=(236, 159, 5))
+    draw = ImageDraw.Draw(im)
+    msg = "From the collection of Sweety Jewellers"
+    draw.fontmode = "L"
+    draw.text((w/2, line_height/2), msg, fill=(41, 51, 92), font=marketing_font, anchor='mm')
+    pipeline.append(im)
+    total_height += int(line_height)
     
     # Blank line above
     im = Image.new(mode="RGB",size=(w, int(line_height/2)), color=(250, 250, 250))
@@ -239,11 +248,12 @@ def create_image(DB, primary_key, labels, rate_col=None):
         txt_lines[-1].append(msg)
     
     # Writing text to image line-by-line
+    general_font = ImageFont.truetype(GENERAL_FONT_FILE, font_size)
     for lines in txt_lines:
         im = Image.new(mode="RGB",size=(w, line_height), color=(250, 250, 250))
         draw = ImageDraw.Draw(im)
         msg = "        ".join(lines)
-        draw.text((w/2, line_height/2), msg, fill='black', font=FONT_SETTINGS, anchor='mm')
+        draw.text((w/2, line_height/2), msg, fill='black', font=general_font, anchor='mm')
         pipeline.append(im)
         total_height += line_height
     
@@ -376,13 +386,11 @@ def load_settings(window):
     window.entryPriceCols.configure(state='normal')
     window.entryPriceCols.delete(0, tk.END)
     window.entryPriceCols.insert(tk.INSERT, settings['price_cols'])
-    window.entryPriceCols.configure(state='readonly')
     window.entryPriceCols.xview_moveto(1)
 
     window.entryLabelsPerLine.configure(state='normal')
     window.entryLabelsPerLine.delete(0, tk.END)
     window.entryLabelsPerLine.insert(tk.INSERT, settings['labels_per_line'])
-    window.entryLabelsPerLine.configure(state='readonly')
     window.entryLabelsPerLine.xview_moveto(1)
 
     window.entryOutputFolder.configure(state='normal')

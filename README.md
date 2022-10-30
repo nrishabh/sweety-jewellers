@@ -21,6 +21,10 @@ Me and me alone.
 - pandas: 1.5.0
 - Pillow: 9.2.0
 
+## Themes and Colors
+Space Cadet: #29335c
+Marigold: #ec9f05
+
 ## Directory and File Structure
 <!-- TODO -->
 
