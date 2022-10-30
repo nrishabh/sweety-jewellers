@@ -1,12 +1,12 @@
 import os
 import sys
-import time
+import json
 import pandas as pd
 import tkinter as tk
 
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw
-from tkinter.filedialog import askopenfilename, askdirectory
+from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfile
 
 # Hard-code Vars
 NEW_STOCK_DATE = datetime.utcnow()+timedelta(hours=5, minutes=30)-timedelta(days=28)
@@ -330,3 +330,72 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
                 printer(f"{item} - Created retail image for col {price_col}.")
     
     printer("Finished generating JPGs.")
+
+def save_settings(window):
+    
+    filetypes = (('Sweety Jewellers Files', '*.sj'),
+                ('All Files', '*.*'))
+    file = asksaveasfile(filetypes = filetypes, defaultextension = filetypes)
+    if file:
+        settings = dict()
+        settings['main_xlsx_path'] = window.entryMainXLSXPath.get()
+        settings['purchase_xlsx_path'] = window.entryPurchaseXLSXPath.get()
+        settings['in_path'] = window.entryImagesFolder.get()
+        settings['price_cols'] = window.entryPriceCols.get()
+        settings['labels_per_line'] = window.entryLabelsPerLine.get()
+        settings['out_path'] = window.entryOutputFolder.get()
+        
+        json.dump(settings, file)    
+        printer("Settings saved successfully.")
+
+def load_settings(window):
+
+    filename = askopenfilename(initialdir = "/",
+                                          title = "Select a File",
+                                          filetypes = (('Sweety Jewellers Files', '*.sj'),
+                                                       ("All files", "*.*")))
+    
+    if filename!='':
+        with open(filename, mode='r') as file:
+            settings = json.load(file)
+    
+    window.entryMainXLSXPath.configure(state='normal')
+    window.entryMainXLSXPath.delete(0, tk.END)
+    window.entryMainXLSXPath.insert(tk.INSERT, settings['main_xlsx_path'])
+    window.entryMainXLSXPath.configure(state='readonly')
+    window.entryMainXLSXPath.xview_moveto(1)
+    load_main_xlsx(settings['main_xlsx_path'])
+
+    window.entryPurchaseXLSXPath.configure(state='normal')
+    window.entryPurchaseXLSXPath.delete(0, tk.END)
+    window.entryPurchaseXLSXPath.insert(tk.INSERT, settings['purchase_xlsx_path'])
+    window.entryPurchaseXLSXPath.configure(state='readonly')
+    window.entryPurchaseXLSXPath.xview_moveto(1)
+    load_purchase_xlsx(settings['purchase_xlsx_path'])
+
+    window.entryPriceCols.configure(state='normal')
+    window.entryPriceCols.delete(0, tk.END)
+    window.entryPriceCols.insert(tk.INSERT, settings['price_cols'])
+    window.entryPriceCols.configure(state='readonly')
+    window.entryPriceCols.xview_moveto(1)
+
+    window.entryLabelsPerLine.configure(state='normal')
+    window.entryLabelsPerLine.delete(0, tk.END)
+    window.entryLabelsPerLine.insert(tk.INSERT, settings['labels_per_line'])
+    window.entryLabelsPerLine.configure(state='readonly')
+    window.entryLabelsPerLine.xview_moveto(1)
+
+    window.entryOutputFolder.configure(state='normal')
+    window.entryOutputFolder.delete(0, tk.END)
+    window.entryOutputFolder.insert(tk.INSERT, settings['out_path'])
+    window.entryOutputFolder.configure(state='readonly')
+    window.entryOutputFolder.xview_moveto(1)
+
+    window.entryImagesFolder.configure(state='normal')
+    window.entryImagesFolder.delete(0, tk.END)
+    window.entryImagesFolder.insert(tk.INSERT, settings['in_path'])
+    window.entryImagesFolder.configure(state='readonly')
+    window.entryImagesFolder.xview_moveto(1)
+    read_inp_imgs(settings['in_path'])
+
+    printer("Settings loaded successfully.")
