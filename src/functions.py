@@ -20,14 +20,28 @@ MARKETING_FONT_FILE = r"assets/marketing_font.ttf"
 LINE_HEIGHT = 100
 LABELS_PER_LINE = 2
 
+LOGFILE = ""
+
 DB = pd.DataFrame()
 
+def set_logfile(filename):
+    
+    global LOGFILE
+    
+    LOGFILE = r"logs/"+filename
+
 def printer(msg):
+    global LOGFILE
+    
     now = datetime.now().strftime("%d-%b-%y %H:%M:%S - ")
+    with open(LOGFILE, mode='a+') as logfile:
+        logfile.write(now+msg+"\n")
     print(now+msg)
 
 def eprinter(msg):
     now = datetime.now().strftime("%d-%b-%y %H:%M:%S - ")
+    with open(LOGFILE, mode='a') as logfile:
+        logfile.write(now+msg+"\n")
     print(now+msg, file=sys.stderr)
 
 # Print to GUI console
