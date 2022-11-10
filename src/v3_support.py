@@ -5,10 +5,12 @@
 #  in conjunction with Tcl version 8.6
 #    Oct 29, 2022 02:42:27 PM IST  platform: Windows NT
 
+import os
 import sys
+from datetime import datetime
 import tkinter as tk
 import tkinter.ttk as ttk
-from functions import PrintLogger, ErrorLogger
+from functions import PrintLogger, ErrorLogger, set_logfile
 from tkinter.constants import *
 
 import v3
@@ -17,6 +19,10 @@ def main(*args):
     '''Main entry point for the application.'''
     global root
     root = tk.Tk()
+
+    if not os.path.isdir(r"logs/"):
+        os.makedirs("logs")
+    set_logfile("Session_"+(datetime.now().strftime("%d%b%y_%H%M%S"))+".log")
     root.protocol( 'WM_DELETE_WINDOW' , root.destroy)
     # Creates a toplevel widget.
     global _top1, _w1
