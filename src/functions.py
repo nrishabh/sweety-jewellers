@@ -205,7 +205,6 @@ def create_image(DB, primary_key, labels, rate_col=None):
 
     font_size = int((w/2100)*FONT_SIZE)
     line_height = int((w/2100)*LINE_HEIGHT) # pixels
-    printer("Line Height: "+str(line_height))
     
     # Marketing line first
     marketing_font = ImageFont.truetype(MARKETING_FONT_FILE, font_size)
@@ -232,7 +231,7 @@ def create_image(DB, primary_key, labels, rate_col=None):
         if labels[i]==DB.index.name:
             msg = labels[i]+": "+primary_key
         elif labels[i]=="Rate":
-            msg = "Rate: "+str(DB.at[primary_key, rate_col])
+            msg = "Rate: "+str(DB.at[primary_key, "Rate_"+rate_col])
         else:
             msg = labels[i]+": "+str(DB.at[primary_key, labels[i]])
         
@@ -268,8 +267,6 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
     global DB, PRICE_COLS, LABELS_PER_LINE
 
-    preprocess(entryMainXLSXPath.get(), entryPurchaseXLSXPath.get(), entryImagesFolder.get())
-
     PRICE_COLS = entryPriceCols.get().split(",")
     if PRICE_COLS!=['']:
         for i in range(len(PRICE_COLS)):
@@ -284,6 +281,8 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
     OUT_FOLDER = entryOutputFolder.get()
     printer("Set output folder.")
+
+    preprocess(entryMainXLSXPath.get(), entryPurchaseXLSXPath.get(), entryImagesFolder.get())
 
     for item in DB.index:
     
@@ -302,9 +301,13 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
         if not os.path.isdir(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group):
             os.makedirs(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group)    
         
+        if not os.path.isdir(OUT_FOLDER+r"/"+"Wholesale"+r"/"+"ALL"):
+            os.makedirs(OUT_FOLDER+r"/"+"Wholesale"+r"/"+"ALL")    
+
         img = create_image(DB, item, labels=["Product Code", "Group", "Category"])
         img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_time_tag+r"/"+item+".jpg")
         img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group+r"/"+item+".jpg")
+        img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+"ALL"+r"/"+item+".jpg")
         # TODO: del(img)
         printer(f"{item} - Created image for wholesale.")
         
@@ -313,20 +316,23 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
             continue
         for price_col in PRICE_COLS:
             
-            if DB.at[item, price_col]=='':
+            if DB.at[item, "Rate_"+price_col]=='':
                 eprinter(f"{item} - Skipped for col {price_col} due to missing value.")
             else:
                 printer(f"{item} - Creating retail image for col {price_col}.")
                 img = create_image(DB, item, labels=["Product Code", "Group", "Category", "Rate", "Min Ord"], rate_col=price_col)
-                
                 if not os.path.isdir(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag):
                     os.makedirs(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag)
 
                 if not os.path.isdir(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group):
                     os.makedirs(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group)
 
+                if not os.path.isdir(OUT_FOLDER+r"/"+price_col+r"/"+"ALL"):
+                    os.makedirs(OUT_FOLDER+r"/"+price_col+r"/"+"ALL")
+
                 img.save(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group+r"/"+item+".jpg")
                 img.save(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag+r"/"+item+".jpg")
+                img.save(OUT_FOLDER+r"/"+price_col+r"/"+"ALL"+r"/"+item+".jpg")
                 # TODO: del(img)
                 printer(f"{item} - Created retail image for col {price_col}.")
     
