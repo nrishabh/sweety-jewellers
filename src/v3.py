@@ -107,7 +107,7 @@ class mainWindow:
         self.btnLoadMainXLSX.configure(takefocus="")
         self.btnLoadMainXLSX.configure(text='''Load Main XLSX''')
         self.btnLoadMainXLSX.configure(compound='left')
-        self.btnLoadMainXLSX.configure(command=lambda: select_file(self.entryMainXLSXPath, 'load_main_xlsx'))
+        self.btnLoadMainXLSX.configure(command=lambda: select_file(self.entryMainXLSXPath))
         
         self.framePriceCols = ttk.Frame(self.top)
         self.framePriceCols.place(relx=0.017, rely=0.4, relheight=0.082
@@ -180,7 +180,13 @@ class mainWindow:
         self.btnGenJPG.configure(takefocus="")
         self.btnGenJPG.configure(text='''Generate JPGs''')
         self.btnGenJPG.configure(compound='left')
-        self.btnGenJPG.configure(command=lambda: generate_jpgs(self.entryPriceCols, self.entryLabelsPerLine, self.entryOutputFolder))
+        self.btnGenJPG.configure(command=lambda: generate_jpgs(
+            self.entryMainXLSXPath,
+            self.entryPurchaseXLSXPath,
+            self.entryImagesFolder,
+            self.entryOutputFolder,
+            self.entryLabelsPerLine,
+            self.entryPriceCols))
 
         self.btnGenPDF = ttk.Button(self.frameButtons)
         self.btnGenPDF.place(relx=0.5, rely=0.2, height=30, width=275)
@@ -224,7 +230,7 @@ class mainWindow:
         self.btnLoadPurchaseXLSX.configure(takefocus="")
         self.btnLoadPurchaseXLSX.configure(text='''Load Pur. Order XLSX''')
         self.btnLoadPurchaseXLSX.configure(compound='left')
-        self.btnLoadPurchaseXLSX.configure(command=lambda: select_file(self.entryPurchaseXLSXPath, 'load_purchase_xlsx'))
+        self.btnLoadPurchaseXLSX.configure(command=lambda: select_file(self.entryPurchaseXLSXPath))
 
         self.frameImagesFolder = ttk.Frame(self.top)
         self.frameImagesFolder.place(relx=0.017, rely=0.3, relheight=0.083
@@ -247,7 +253,7 @@ class mainWindow:
         self.btnSelectImagesFolder.configure(takefocus="")
         self.btnSelectImagesFolder.configure(text='''...''')
         self.btnSelectImagesFolder.configure(compound='left')
-        self.btnSelectImagesFolder.configure(command=lambda: select_folder(self.entryImagesFolder, 'read_inp_imgs'))
+        self.btnSelectImagesFolder.configure(command=lambda: select_folder(self.entryImagesFolder))
 
         self.lblImagesFolder = ttk.Label(self.frameImagesFolder)
         self.lblImagesFolder.place(relx=0.017, rely=0.2, height=32, width=80)
