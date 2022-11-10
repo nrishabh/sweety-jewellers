@@ -63,15 +63,13 @@ class ErrorLogger(object):  # create file like object
         pass
 
 # Function to select file
-def select_file(entry_widget, loader=None):
+def select_file(entry_widget):
     filename = askopenfilename(initialdir = "/",
                                           title = "Select a File",
                                           filetypes = (("Excel files", "*.xlsx*"),
                                                        ("All files", "*.*")))
     
     if filename!='':
-        if loader is not None:
-            globals()[loader](filename)
         
         entry_widget.configure(state='normal')
         entry_widget.delete(0, tk.END)
@@ -80,26 +78,23 @@ def select_file(entry_widget, loader=None):
         entry_widget.xview_moveto(1)
 
 # Function to select folder
-def select_folder(entry_widget, loader=None):
+def select_folder(entry_widget):
     dir_path = askdirectory()
     
     if dir_path!='':
-        if loader is not None:
-            globals()[loader](dir_path)
 
         entry_widget.configure(state='normal')
         entry_widget.delete(0, tk.END)
         entry_widget.insert(tk.INSERT, dir_path)
         entry_widget.configure(state='readonly')
         entry_widget.xview_moveto(1)
+        
+def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
 
-# Main XLSX File Validator
-def load_main_xlsx(path):
-
-    global DB
+    global DB, PRICE_COLS
 
     # Read Main Excel File
-    DB = pd.read_excel(path, engine='openpyxl', skiprows=5)
+    DB = pd.read_excel(main_xlsx_path, engine='openpyxl', skiprows=5)
 
     # Strip whitespace in str columns
     for col in DB.columns:
@@ -114,15 +109,11 @@ def load_main_xlsx(path):
     DB["Min Qty"] = pd.to_numeric(DB["Min Qty"], downcast="integer")
 
     printer("Loaded Main XLSX file successfully.")
-    pass
 
-# Purchase Order XLSX File Validator
-def load_purchase_xlsx(path):
-
-    global DB
+    # TODO: del(col)
 
     # Reading Purchase Order Excel File
-    purchase_data = pd.read_excel(path)
+    purchase_data = pd.read_excel(purchase_order_xlsx_path)
 
     for col in purchase_data.columns:
         if purchase_data.dtypes[col]=='O':
@@ -143,6 +134,7 @@ def load_purchase_xlsx(path):
             try:
                 last_purchase_date = max(purchase_data.at[i, 'Date'])
             except KeyError as e:
+                last_purchase_date = ""
                 DB.at[i, 'time_tag'] = 'Regular'
                 continue
             except TypeError as e:
@@ -155,25 +147,21 @@ def load_purchase_xlsx(path):
 
     printer("Finished assigning time tags.")
 
-def read_inp_imgs(path):
-    
+    # TODO: del(col, purchase_data, i, last_purchase_date)
+
     DB['ip_file_path'] = ''
-    filepaths = os.listdir(path)
+    filepaths = os.listdir(inp_img_dir)
     for item in DB.index:
         if ((item+".jpg") in filepaths):
-            DB.at[item, 'ip_file_path'] = path+r"/"+item+".jpg"
+            DB.at[item, 'ip_file_path'] = inp_img_dir+r"/"+item+".jpg"
         elif ((item+".jpeg") in filepaths):
-            DB.at[item, 'ip_file_path'] = path+r"/"+item+".jpeg"
+            DB.at[item, 'ip_file_path'] = inp_img_dir+r"/"+item+".jpeg"
         else:
             eprinter(f"No image found for {item}. This item will be skipped.")
 
     printer("Finished reading images folder.")
     
-    pass
-
-def db_prep():
-
-    global DB, PRICE_COLS
+    # TODO: del(filepaths, item)
 
     for col_index in range(len(PRICE_COLS)):
         col = PRICE_COLS[col_index]
@@ -187,6 +175,7 @@ def db_prep():
                 DB.at[i, new_col] = f"Rs. {DB.at[i, col]:.2f} per "+str(DB.at[i, "Base Unit"])
 
         # PRICE_COLS[col_index] = new_col
+    # TODO: del(new_col, i)
 
     DB["Min Ord"] = ""
     for item in DB.index:
@@ -196,10 +185,12 @@ def db_prep():
             eprinter(f"{item} is missing value for Ord Unit. This item will be skipped.")
         else:
             DB.at[item, "Min Ord"] = str(DB.at[item, "Min Qty"]) + " " + DB.at[item, "Ord Unit"]
+    
+    # TODO: del(item)
 
 def create_image(DB, primary_key, labels, rate_col=None):
     
-    global FONT_SIZE, FONT_FILE, LINE_HEIGHT, LABELS_PER_LINE
+    global FONT_SIZE, LINE_HEIGHT, LABELS_PER_LINE, MARKETING_FONT_FILE, GENERAL_FONT_FILE
 
     pipeline = list()
     total_height = 0
@@ -241,7 +232,7 @@ def create_image(DB, primary_key, labels, rate_col=None):
         if labels[i]==DB.index.name:
             msg = labels[i]+": "+primary_key
         elif labels[i]=="Rate":
-            msg = "Rate: "+str(DB.at[primary_key, "Rate_"+rate_col])
+            msg = "Rate: "+str(DB.at[primary_key, rate_col])
         else:
             msg = labels[i]+": "+str(DB.at[primary_key, labels[i]])
         
@@ -273,9 +264,11 @@ def create_image(DB, primary_key, labels, rate_col=None):
     
     return final_img
 
-def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
+def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, entryOutputFolder, entryLabelsPerLine, entryPriceCols):
 
-    global PRICE_COLS, LABELS_PER_LINE
+    global DB, PRICE_COLS, LABELS_PER_LINE
+
+    preprocess(entryMainXLSXPath.get(), entryPurchaseXLSXPath.get(), entryImagesFolder.get())
 
     PRICE_COLS = entryPriceCols.get().split(",")
     if PRICE_COLS!=['']:
@@ -289,10 +282,8 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
     LABELS_PER_LINE = int(entryLabelsPerLine.get())
     printer("Set number of labels per line.")
 
-    OUT_FOLDER = entryOutFolder.get()
+    OUT_FOLDER = entryOutputFolder.get()
     printer("Set output folder.")
-
-    db_prep()
 
     for item in DB.index:
     
@@ -314,7 +305,7 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
         img = create_image(DB, item, labels=["Product Code", "Group", "Category"])
         img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_time_tag+r"/"+item+".jpg")
         img.save(OUT_FOLDER+r"/"+"Wholesale"+r"/"+path_by_group+r"/"+item+".jpg")
-        del(img)
+        # TODO: del(img)
         printer(f"{item} - Created image for wholesale.")
         
         if DB.at[item, "Min Ord"]=='':
@@ -336,7 +327,7 @@ def generate_jpgs(entryPriceCols, entryLabelsPerLine, entryOutFolder):
 
                 img.save(OUT_FOLDER+r"/"+price_col+r"/"+path_by_group+r"/"+item+".jpg")
                 img.save(OUT_FOLDER+r"/"+price_col+r"/"+path_by_time_tag+r"/"+item+".jpg")
-                del(img)
+                # TODO: del(img)
                 printer(f"{item} - Created retail image for col {price_col}.")
     
     printer("Finished generating JPGs.")
@@ -374,14 +365,12 @@ def load_settings(window):
     window.entryMainXLSXPath.insert(tk.INSERT, settings['main_xlsx_path'])
     window.entryMainXLSXPath.configure(state='readonly')
     window.entryMainXLSXPath.xview_moveto(1)
-    load_main_xlsx(settings['main_xlsx_path'])
 
     window.entryPurchaseXLSXPath.configure(state='normal')
     window.entryPurchaseXLSXPath.delete(0, tk.END)
     window.entryPurchaseXLSXPath.insert(tk.INSERT, settings['purchase_xlsx_path'])
     window.entryPurchaseXLSXPath.configure(state='readonly')
     window.entryPurchaseXLSXPath.xview_moveto(1)
-    load_purchase_xlsx(settings['purchase_xlsx_path'])
 
     window.entryPriceCols.configure(state='normal')
     window.entryPriceCols.delete(0, tk.END)
@@ -404,6 +393,5 @@ def load_settings(window):
     window.entryImagesFolder.insert(tk.INSERT, settings['in_path'])
     window.entryImagesFolder.configure(state='readonly')
     window.entryImagesFolder.xview_moveto(1)
-    read_inp_imgs(settings['in_path'])
 
     printer("Settings loaded successfully.")
