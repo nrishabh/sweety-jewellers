@@ -10,7 +10,7 @@ import sys
 from datetime import datetime
 import tkinter as tk
 import tkinter.ttk as ttk
-from functions import PrintLogger, ErrorLogger, set_logfile
+from functions import PrintLogger, ErrorLogger, set_logfile, set_root
 from tkinter.constants import *
 
 import v3
@@ -19,7 +19,7 @@ def main(*args):
     '''Main entry point for the application.'''
     global root
     root = tk.Tk()
-
+    set_root(root)
     if not os.path.isdir(r"logs/"):
         os.makedirs("logs")
     set_logfile("Session_"+(datetime.now().strftime("%d%b%y_%H%M%S"))+".log")
