@@ -3,7 +3,7 @@ import sys
 import json
 import pandas as pd
 import tkinter as tk
-
+from tkinter import messagebox
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw
 from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfile
@@ -22,7 +22,15 @@ LABELS_PER_LINE = 2
 
 LOGFILE = ""
 
+ROOT = ""
+
 DB = pd.DataFrame()
+
+def set_root(root):
+
+    global ROOT
+
+    ROOT = root
 
 def set_logfile(filename):
     
@@ -277,9 +285,19 @@ def create_image(DB, primary_key, labels, rate_col=None):
     
     return final_img
 
-def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, entryOutputFolder, entryLabelsPerLine, entryPriceCols):
+def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, entryOutputFolder, entryLabelsPerLine, entryPriceCols, objProgressBar):
 
     global DB, PRICE_COLS, LABELS_PER_LINE
+
+    OUT_FOLDER = entryOutputFolder.get()
+    printer("Set output folder.")
+
+    if len(os.listdir(OUT_FOLDER))>0:
+        
+        eprinter("The chosen output folder is not empty. Please clear the folder and try again.")
+        messagebox.showerror("Output Folder Not Empty",
+        "The chosen output folder is not empty. Please clear the folder and try again.")
+        return
 
     PRICE_COLS = entryPriceCols.get().split(",")
     if PRICE_COLS!=['']:
@@ -293,15 +311,21 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
     LABELS_PER_LINE = int(entryLabelsPerLine.get())
     printer("Set number of labels per line.")
 
-    OUT_FOLDER = entryOutputFolder.get()
-    printer("Set output folder.")
-
     preprocess(entryMainXLSXPath.get(), entryPurchaseXLSXPath.get(), entryImagesFolder.get())
 
+    objProgressBar.configure(length=100)
+    incr = 100/len(DB.index)
+    progress = 0
     for item in DB.index:
-    
+
         if DB.at[item, "ip_file_path"]=='':
             eprinter(f"{item} - Skipped.")
+
+            #update progress bar
+            progress += incr
+            objProgressBar['value'] = progress
+            ROOT.update_idletasks()
+
             continue
         
         path_by_time_tag = r"/BY_TIME_TAG/"+DB.at[item, 'time_tag']+r"/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']
@@ -327,6 +351,12 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
         
         if DB.at[item, "Min Ord"]=='':
             eprinter(f"{item} - Skipped due to missing 'Min Ord' value.")
+            
+            #update progress bar
+            progress += incr
+            objProgressBar['value'] = progress
+            ROOT.update_idletasks()
+
             continue
         for price_col in PRICE_COLS:
             
@@ -349,7 +379,11 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
                 img.save(OUT_FOLDER+r"/"+price_col+r"/"+"ALL"+r"/"+item+".jpg")
                 # TODO: del(img)
                 printer(f"{item} - Created retail image for col {price_col}.")
-    
+
+        #update progress bar
+        progress += incr
+        objProgressBar['value'] = progress
+        ROOT.update_idletasks()
     printer("Finished generating JPGs.")
 
 def save_settings(window):
