@@ -1,10 +1,9 @@
 import os
 import sys
 import json
-from tqdm.tk import tqdm_tk
 import pandas as pd
 import tkinter as tk
-
+from tkinter import messagebox
 from datetime import datetime, timedelta
 from PIL import Image, ImageFont, ImageDraw
 from tkinter.filedialog import askopenfilename, askdirectory, asksaveasfile
@@ -292,6 +291,13 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
     OUT_FOLDER = entryOutputFolder.get()
     printer("Set output folder.")
+
+    if len(os.listdir(OUT_FOLDER))>0:
+        
+        eprinter("The chosen output folder is not empty. Please clear the folder and try again.")
+        messagebox.showerror("Output Folder Not Empty",
+        "The chosen output folder is not empty. Please clear the folder and try again.")
+        return
 
     PRICE_COLS = entryPriceCols.get().split(",")
     if PRICE_COLS!=['']:
