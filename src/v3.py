@@ -8,9 +8,9 @@
 import sys
 import tkinter as tk
 import tkinter.ttk as ttk
-from tkinter.filedialog import askopenfilename, askdirectory
 from tkinter.constants import *
-from functions import select_file, select_folder, generate_jpgs, save_settings, load_settings
+from db import generate_jpgs
+from utils import select_file, select_folder, save_settings, load_settings
 import os.path
 
 _script = sys.argv[0]

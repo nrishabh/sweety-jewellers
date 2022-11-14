@@ -9,8 +9,8 @@ import os
 import sys
 from datetime import datetime
 import tkinter as tk
-import tkinter.ttk as ttk
-from functions import PrintLogger, ErrorLogger, set_logfile, set_root
+from db import set_root
+from utils import PrintLogger, ErrorLogger, set_logfile
 from tkinter.constants import *
 
 import v3
