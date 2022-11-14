@@ -43,14 +43,19 @@ def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
     printer("Loaded Main XLSX file successfully.")
 
     # Reading Purchase Order Excel File
-    purchase_data = pd.read_excel(purchase_order_xlsx_path)
+    purchase_data = pd.read_excel(purchase_order_xlsx_path, engine='openpyxl', skiprows=5)
 
+    # Strip whitespace in str columns
     for col in purchase_data.columns:
         if purchase_data.dtypes[col]=='O':
             purchase_data[col].str.strip()
             purchase_data.fillna(value={col: ""})
 
-    purchase_data.set_index("Item Name", inplace=True)
+    purchase_data.drop(index=0, inplace=True)
+    print(purchase_data.columns)
+    purchase_data.set_index("Code", inplace=True)
+
+    purchase_data = pd.read_excel(purchase_order_xlsx_path)
 
     printer("Loaded Purchase Order file successfully.")
 
