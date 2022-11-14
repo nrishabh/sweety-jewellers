@@ -9,7 +9,7 @@ import sys
 import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter.constants import *
-from db import generate_jpgs
+from db import generate_jpgs, generate_pdf
 from utils import select_file, select_folder, save_settings, load_settings
 import os.path
 
@@ -288,6 +288,14 @@ class mainWindow:
         self.btnGenPDF.configure(takefocus="")
         self.btnGenPDF.configure(text='''Generate PDF''')
         self.btnGenPDF.configure(compound='left')
+        self.btnGenPDF.configure(command=lambda: generate_pdf(
+            self.entryMainXLSXPath,
+            self.entryPurchaseXLSXPath,
+            self.entryImagesFolder,
+            self.entryOutputFolder,
+            self.entryLabelsPerLine,
+            self.entryPriceCols,
+            self.ProgressBar))
 
 # The following code is added to facilitate the Scrolled widgets you specified.
 class AutoScroll(object):
