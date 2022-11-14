@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime, timedelta
+from pdf import create_pdf
 
 # Hard-code Vars
 NEW_STOCK_DATE = datetime.utcnow()+timedelta(hours=5, minutes=30)-timedelta(days=28)
@@ -123,33 +124,31 @@ def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
             DB.at[item, "Min Ord"] = str(DB.at[item, "Min Qty"]) + " " + DB.at[item, "Ord Unit"]
 
 
-def generate_missing_report(output_folder):
+def generate_missing_report(OUT_FOLDER=None, OUT_FILE=None):
 
     global DB
 
     report = DB[DB.any(axis=1,bool_only=True)]
     
     if len(report)>0:
-        report.to_csv(output_folder+r"/"+"SkippedItems.csv", index=True, columns=[col for col in DB.columns if "Missing" in col])
+        if OUT_FILE is not None:
+            report.to_csv(OUT_FILE, index=True, columns=[col for col in DB.columns if "Missing" in col])
+        if OUT_FOLDER is not None:    
+            report.to_csv(OUT_FOLDER+r"/"+"SkippedItems_IMG_.csv", index=True, columns=[col for col in DB.columns if "Missing" in col])
 
 def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, entryOutputFolder, entryLabelsPerLine, entryPriceCols, objProgressBar):
 
     import os
     from jpg import create_image
-    from tkinter import messagebox
+    from datetime import datetime
     from utils import printer, eprinter
     
     global DB, PRICE_COLS, LABELS_PER_LINE
 
     OUT_FOLDER = entryOutputFolder.get()
+    date_time = datetime.now().strftime("%d_%b_%y_%H_%M_%S")
+    OUT_FOLDER = OUT_FOLDER+r"/Img_"+date_time
     printer("Set output folder.")
-
-    if len(os.listdir(OUT_FOLDER))>0:
-        
-        eprinter("The chosen output folder is not empty. Please clear the folder and try again.")
-        messagebox.showerror("Output Folder Not Empty",
-        "The chosen output folder is not empty. Please clear the folder and try again.")
-        return
 
     PRICE_COLS = entryPriceCols.get().split(",")
     if PRICE_COLS!=['']:
@@ -172,7 +171,6 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
         if DB.at[item, "MissingImage"]==True:
 
-
             #update progress bar
             progress += incr
             objProgressBar['value'] = progress
@@ -180,8 +178,8 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
             continue
         
-        path_by_time_tag = r"/BY_TIME_TAG/"+DB.at[item, 'time_tag']+r"/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']
-        path_by_group = r"/BY_GROUP/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']+r"/"+DB.at[item, 'time_tag']
+        path_by_time_tag = r"BY_TIME_TAG/"+DB.at[item, 'time_tag']+r"/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']
+        path_by_group = r"BY_GROUP/"+DB.at[item, 'Group']+r"/"+DB.at[item, 'Category']+r"/"+DB.at[item, 'time_tag']
 
         printer(f"{item} - Creating image for wholesale.")
         
@@ -201,7 +199,7 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
         printer(f"{item} - Created image for wholesale.")
         
         if (DB.at[item, "MissingMinQty"]==True) or ((DB.at[item, "MissingOrdUnit"]==True)):
-            # eprinter(f"{item} - Skipped due to missing 'Min Ord' value.")
+            eprinter(f"{item} - Skipped due to missing 'Min Ord' value.")
             
             #update progress bar
             progress += incr
@@ -212,7 +210,7 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
         for price_col in PRICE_COLS:
             
-            if DB.at[item, "ValueMissing_Column_"+price_col] is False:
+            if DB.at[item, "ValueMissing_Column_"+price_col]==False:
                 # eprinter(f"{item} - Skipped for col {price_col} due to missing value.")
             
                 printer(f"{item} - Creating retail image for col {price_col}.")
@@ -239,4 +237,36 @@ def generate_jpgs(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, e
 
     printer("Finished generating JPGs.")
 
-    generate_missing_report(OUT_FOLDER)
+    generate_missing_report(OUT_FOLDER=OUT_FOLDER)
+
+def generate_pdf(entryMainXLSXPath, entryPurchaseXLSXPath, entryImagesFolder, entryOutputFolder, entryLabelsPerLine, entryPriceCols, objProgressBar):
+
+    from tkinter import messagebox
+    from utils import printer, eprinter
+    global DB, PRICE_COLS, LABELS_PER_LINE, ROOT
+
+    OUT_FOLDER = entryOutputFolder.get()+r"/"
+    date_time = datetime.now().strftime("%d_%b_%y_%H_%M_%S")
+    OUT_FILE = OUT_FOLDER+"Catalogue_"+date_time
+    printer("Set output file.")
+
+    PRICE_COLS = entryPriceCols.get().split(",")
+    if PRICE_COLS!=['']:
+        for i in range(len(PRICE_COLS)):
+            PRICE_COLS[i] = PRICE_COLS[i].strip()
+    else:
+        eprinter("No price columns specified! Please specify at least one price column to generate PDF.")
+        messagebox.showerror("Missing price columns", "No price columns specified! Please specify at least one price column to generate PDF.")
+        return
+
+    printer("Set price columns.")
+
+    LABELS_PER_LINE = int(entryLabelsPerLine.get())
+    printer("Set number of labels per line.")
+
+    preprocess(entryMainXLSXPath.get(), entryPurchaseXLSXPath.get(), entryImagesFolder.get())
+    DB.to_csv("Test.csv")
+    for col in PRICE_COLS:
+        create_pdf(DB, col, OUT_FILE, objProgressBar, ROOT)
+    
+    generate_missing_report(OUT_FILE=OUT_FOLDER+"SkippedItems_PDF_"+date_time+".csv")

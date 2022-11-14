@@ -1,8 +1,8 @@
 from PIL import Image, ImageFont, ImageDraw
 
 FONT_SIZE = 45
-GENERAL_FONT_FILE = r"assets/general_font.ttf"
-MARKETING_FONT_FILE = r"assets/marketing_font.ttf"
+GENERAL_FONT_FILE = r"assets/RobotoSlab-Medium.ttf"
+MARKETING_FONT_FILE = r"assets/Roboto-Italic.ttf"
 LINE_HEIGHT = 100
 LABELS_PER_LINE = 2
 
@@ -15,7 +15,6 @@ def create_image(DB, primary_key, labels, rate_col=None):
     pipeline = list()
     total_height = 0
     
-    print(DB.loc[primary_key])
     raw_image = Image.open(DB.at[primary_key, 'ip_file_path'])
     
     # Resizing image
