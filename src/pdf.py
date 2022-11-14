@@ -144,5 +144,6 @@ def create_pdf(raw_DB, price_col, OUT_FILE, objProgressBar, ROOT):
         ROOT.update_idletasks()
 
     c.showPage()
+    printer("Generating PDF...")
     c.save()
     printer("Finished generating PDF.")
