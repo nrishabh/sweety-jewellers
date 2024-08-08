@@ -2,3 +2,10 @@ JPG/
 Output/
 */__pycache__/
 logs/
+*.xlsx
+*.JPG
+*.jpg
+*.png
+*.pdf
+*.csv
+.DS_Store

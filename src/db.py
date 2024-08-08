@@ -39,6 +39,10 @@ def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
     # Read Main Excel File
     DB = pd.read_excel(main_xlsx_path, engine="openpyxl", skiprows=5)
 
+    DB["Category"] = DB["Category"].astype(object)
+    DB["Category"].fillna(value="", inplace=True)
+
+    printer("Columns in Main XLSX file: " + str(DB.columns))
     # Strip whitespace in str columns
     for col in DB.columns:
         if DB.dtypes[col] == "O":
@@ -213,6 +217,10 @@ def generate_jpgs(
     incr = 100 / len(DB.index)
     progress = 0
     for item in DB.index:
+
+        if DB.at[item, "Category"] == "":
+            printer(f"{item} - Skipped for wholesale due to missing category.")
+            continue
 
         if DB.at[item, "MissingImage"] == True:
 
