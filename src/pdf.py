@@ -46,7 +46,7 @@ def drawBG(c):
     # c.setFillColorRGB(255, 255, 255)
     c.line(17 * cm, 0.8 * cm, 20.21 * cm, 0.8 * cm)
     c.linkURL(
-        "http://wa.me/919320169254",
+        "http://wa.me/91",
         (14.5 * cm, 0.7 * cm, 20.45 * cm, 1.4 * cm),
         relative=1,
     )

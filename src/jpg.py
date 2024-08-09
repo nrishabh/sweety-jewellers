@@ -31,7 +31,7 @@ def create_image(DB, primary_key, labels, rate_col=None):
     marketing_font = ImageFont.truetype(MARKETING_FONT_FILE, font_size)
     im = Image.new(mode="RGB", size=(w, line_height), color=(236, 159, 5))
     draw = ImageDraw.Draw(im)
-    msg = "WhatsApp +91 9320169254"
+    msg = "WhatsApp +91 "
     draw.fontmode = "L"
     draw.text(
         (w / 2, line_height / 2),
