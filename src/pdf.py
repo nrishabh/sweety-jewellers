@@ -17,10 +17,10 @@ def drawNewSection(c, group, category, y_pos):
 
     c.setFillColorRGB(0, 0, 0)
     c.setFont("Roboto Medium", 10)
+    if category == "General":
+        category = "General " + group + " Items"
     c.drawCentredString(
-        (0.5 * cm) + ((20 * cm) / 2),
-        841.89 - (y + ((0.9 * cm) / 2)),
-        group + ": " + category,
+        (0.5 * cm) + ((20 * cm) / 2), 841.89 - (y + ((0.9 * cm) / 2)), str(category)
     )
 
 
@@ -36,9 +36,9 @@ def drawBG(c):
     # ADD 0.35cm to Y
     c.setFillColorRGB(255, 255, 255)
     c.setFont("Roboto Italic", 12)
-    c.drawString(0.75 * cm, 28.8 * cm, "Collection Catalogue")
-    # c.setFont("Roboto Medium", 24)
-    # c.drawString(13.75*cm, 27.7*cm, "")
+    c.drawString(0.75 * cm, 28.8 * cm, "Hair Accessories and Imitation Jewellery")
+    c.setFont("Roboto Medium", 24)
+    c.drawString(13.75 * cm, 27.7 * cm, "Collection Catalogue")
     c.setFont("Roboto Italic", 12)
     c.drawString(0.75 * cm, 0.9 * cm, "Order on WhatsApp, Pan-India Delivery")
     c.drawString(14.65 * cm, 0.9 * cm, "Reach us on +91 93201 69254")
@@ -52,9 +52,7 @@ def drawBG(c):
     )
 
 
-def incr_y(c, x_pos, y_pos):
-
-    global isBlankPage
+def incr_y(c, x_pos, y_pos, isBlankPage):
 
     # print("Increasing Y_Pos.\nCurrent Y_Pos: "+str(y_pos))
 
@@ -70,20 +68,20 @@ def incr_y(c, x_pos, y_pos):
         x_pos = 1
 
     # print("New X_Pos: "+str(x_pos)+"\tNew Y_Pos: "+str(y_pos))
-    return x_pos, y_pos
+    return x_pos, y_pos, isBlankPage
 
 
-def incr_x(c, x_pos, y_pos):
+def incr_x(c, x_pos, y_pos, isBlankPage):
 
     # print("Increasing X_Pos.\nCurrent X_Pos: "+str(x_pos))
 
     if x_pos < 3:
         x_pos += 1
     else:
-        x_pos, y_pos = incr_y(c, x_pos, y_pos)
+        x_pos, y_pos, isBlankPage = incr_y(c, x_pos, y_pos, isBlankPage)
 
     # print("New X_Pos: "+str(x_pos)+"\tNew Y_Pos: "+str(y_pos))
-    return x_pos, y_pos
+    return x_pos, y_pos, isBlankPage
 
 
 def addItemDetails(c, DB, item, price_col, x_pos, y_pos):
@@ -123,7 +121,38 @@ def addItemDetails(c, DB, item, price_col, x_pos, y_pos):
     c.drawCentredString(x, 841.89 - y, msg)
 
 
-def create_pdf(raw_DB, price_col, OUT_FILE, objProgressBar, ROOT):
+def save_pdf(c, group_name):
+
+    from utils import printer
+
+    c.showPage()
+    c.save()
+    printer("Saving PDF for " + str(group_name) + "...")
+
+
+def new_pdf(FOLDER, group_name):
+
+    import os
+    from reportlab.pdfgen import canvas
+    from utils import printer
+
+    os.makedirs(FOLDER, exist_ok=True)
+
+    c = canvas.Canvas(
+        filename=FOLDER + r"/" + str(group_name) + ".pdf",
+        pagesize=(595.27, 841.89),
+        bottomup=1,
+    )  # A4 Size of 72PPI, Use Top-Left as origin
+    x_pos = 1
+    y_pos = 1
+    isBlankPage = True
+
+    printer("Creating PDF for " + str(group_name) + "...")
+
+    return c, x_pos, y_pos, isBlankPage
+
+
+def create_pdf(raw_DB, price_col, OUT_FOLDER, objProgressBar, ROOT):
 
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
@@ -133,16 +162,6 @@ def create_pdf(raw_DB, price_col, OUT_FILE, objProgressBar, ROOT):
     pdfmetrics.registerFont(TTFont("Roboto", r"assets/Roboto-Regular.ttf"))
     pdfmetrics.registerFont(TTFont("Roboto Italic", r"assets/Roboto-Italic.ttf"))
     pdfmetrics.registerFont(TTFont("Roboto Medium", r"assets/Roboto-Medium.ttf"))
-
-    c = canvas.Canvas(
-        filename=OUT_FILE + ".pdf", pagesize=(595.27, 841.89), bottomup=1
-    )  # A4 Size of 72PPI, Use Top-Left as origin
-
-    y_pos = 0  # 1, 2, 3, 4
-    x_pos = 0  # 1, 2, 3
-    isBlankPage = True
-    curr_group = ""
-    curr_category = ""
 
     DB = raw_DB[
         -raw_DB[
@@ -154,7 +173,13 @@ def create_pdf(raw_DB, price_col, OUT_FILE, objProgressBar, ROOT):
             ]
         ].any(axis=1, bool_only=True)
     ].copy()
+    DB.loc[DB["Category"] == "Other", "Category"] = "ZZZZZZZZZZ"
     DB.sort_values(by=["Group", "Category"], inplace=True)
+
+    curr_group = DB.at[list(DB.index)[0], "Group"]
+    curr_category = ""
+
+    c, x_pos, y_pos, isBlankPage = new_pdf(OUT_FOLDER, curr_group)
 
     objProgressBar.configure(length=100)
     incr = 100 / len(DB.index)
@@ -167,29 +192,31 @@ def create_pdf(raw_DB, price_col, OUT_FILE, objProgressBar, ROOT):
             continue
 
         printer(f"Adding {item} to PDF.")
+
+        if DB.at[item, "Group"] != curr_group:
+            save_pdf(c, curr_group)
+            curr_group = DB.at[item, "Group"]
+            curr_category = ""
+            c, x_pos, y_pos, isBlankPage = new_pdf(OUT_FOLDER, curr_group)
+
+        if DB.at[item, "Category"] != curr_category:
+            if x_pos != 1:
+                x_pos, y_pos, isBlankPage = incr_y(c, x_pos, y_pos, isBlankPage)
+            curr_category = DB.at[item, "Category"]
+            drawNewSection(c, curr_group, curr_category, y_pos)
+
         if isBlankPage is True:
             drawBG(c)
             isBlankPage = False
 
-        if (DB.at[item, "Group"] != curr_group) or (
-            DB.at[item, "Category"] != curr_category
-        ):
-            if x_pos != 1:
-                x_pos, y_pos = incr_y(c, x_pos, y_pos)
-            curr_group = DB.at[item, "Group"]
-            curr_category = DB.at[item, "Category"]
-            drawNewSection(c, curr_group, curr_category, y_pos)
-
         addItemDetails(c, DB, item, price_col, x_pos, y_pos)
 
-        x_pos, y_pos = incr_x(c, x_pos, y_pos)
+        x_pos, y_pos, isBlankPage = incr_x(c, x_pos, y_pos, isBlankPage)
 
         # update progress bar
         progress += incr
         objProgressBar["value"] = progress
         ROOT.update_idletasks()
 
-    c.showPage()
-    printer("Generating PDF...")
-    c.save()
-    printer("Finished generating PDF.")
+    save_pdf(c, curr_group)
+    printer("Finished creating PDFs.")

@@ -39,10 +39,6 @@ def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
     # Read Main Excel File
     DB = pd.read_excel(main_xlsx_path, engine="openpyxl", skiprows=5)
 
-    DB["Category"] = DB["Category"].astype(object)
-    DB["Category"].fillna(value="", inplace=True)
-
-    printer("Columns in Main XLSX file: " + str(DB.columns))
     # Strip whitespace in str columns
     for col in DB.columns:
         if DB.dtypes[col] == "O":
@@ -139,7 +135,6 @@ def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
     DB["Min Ord"] = ""
     DB["MissingMinQty"] = False
     DB["MissingOrdUnit"] = False
-    DB["MissingCategory"] = False
     for item in DB.index:
         if pd.isna(DB.at[item, "Min Qty"]) is True:
             DB.at[item, "MissingMinQty"] = True
@@ -148,13 +143,6 @@ def preprocess(main_xlsx_path, purchase_order_xlsx_path, inp_img_dir):
             DB.at[item, "MissingOrdUnit"] = True
             eprinter(
                 f"{item} is missing value for Ord Unit. This item will be skipped."
-            )
-        elif (pd.isna(DB.at[item, "Category"]) is True) or (
-            DB.at[item, "Category"] == ""
-        ):
-            DB.at[item, "MissingCategory"] = True
-            eprinter(
-                f"{item} is missing value for Category. This item will be skipped."
             )
         else:
             DB.at[item, "Min Ord"] = (
@@ -225,10 +213,6 @@ def generate_jpgs(
     incr = 100 / len(DB.index)
     progress = 0
     for item in DB.index:
-
-        if DB.at[item, "Category"] == "":
-            printer(f"{item} - Skipped for wholesale due to missing category.")
-            continue
 
         if DB.at[item, "MissingImage"] == True:
 
