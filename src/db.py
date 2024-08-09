@@ -230,7 +230,7 @@ def generate_jpgs(
             printer(f"{item} - Skipped for wholesale due to missing category.")
             continue
 
-        if DB.at[item, "MissingImage"] == True:
+        if DB.at[item, "MissingImage"] is True:
 
             # update progress bar
             progress += incr
@@ -291,8 +291,8 @@ def generate_jpgs(
         img.save(OUT_FOLDER + r"/" + "Wholesale" + r"/" + "ALL" + r"/" + item + ".jpg")
         printer(f"{item} - Created image for wholesale.")
 
-        if (DB.at[item, "MissingMinQty"] == True) or (
-            (DB.at[item, "MissingOrdUnit"] == True)
+        if (DB.at[item, "MissingMinQty"] is True) or (
+            (DB.at[item, "MissingOrdUnit"] is True)
         ):
             eprinter(f"{item} - Skipped due to missing 'Min Ord' value.")
 
@@ -311,7 +311,7 @@ def generate_jpgs(
                 )
                 continue
 
-            if DB.at[item, "ValueMissing_Column_" + price_col] == False:
+            if DB.at[item, "ValueMissing_Column_" + price_col] is False:
                 # eprinter(f"{item} - Skipped for col {price_col} due to missing value.")
 
                 printer(f"{item} - Creating retail image for col {price_col}.")
